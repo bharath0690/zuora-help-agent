@@ -12,6 +12,12 @@ langchain==0.1.4
 langchain-openai==0.0.5
 langchain-community==0.0.17
 
+# Embeddings
+voyageai==0.2.0  # Anthropic recommended embedding partner
+# sentence-transformers==2.3.1  # Uncomment for local embeddings
+tiktoken==0.6.0  # Token counting for chunking
+numpy==1.26.4  # Vector operations
+
 # Vector Stores
 chromadb==0.4.22
 pinecone-client==3.0.0
