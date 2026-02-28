@@ -21,14 +21,25 @@ zuora-help-agent/
 │   ├── config.py            # Configuration & environment variables
 │   ├── rag.py               # RAG pipeline implementation
 │   ├── embeddings.py        # Embedding generation & vector store
+│   ├── faiss_loader.py      # Runtime FAISS index loader
 │   └── prompts.py           # Prompt templates & utilities
+├── frontend/
+│   ├── index.html           # Chat interface
+│   ├── style.css            # Styles
+│   ├── app.js               # JavaScript logic
+│   ├── serve.py             # Development server
+│   └── README.md            # Frontend documentation
 ├── data/
 │   ├── zuora_docs.json      # Scraped documentation
-│   └── vector_store/        # FAISS index + metadata
+│   ├── processed_docs.json  # Processed documents
+│   ├── faiss.index          # FAISS vector index
+│   ├── metadata.json        # Index metadata
+│   └── vector_store/        # Alternative vector store
 ├── scripts/
 │   ├── scrape_zuora_sitemap.py    # Sitemap-based scraper
 │   ├── scrape_zuora_docs.py       # Web crawler scraper
 │   ├── ingest_docs.py             # Chunking + embedding + FAISS
+│   ├── build_index.py             # Build runtime FAISS index
 │   ├── query_index.py             # Test vector store queries
 │   ├── requirements-scraper.txt   # Scraping dependencies
 │   ├── requirements-ingestion.txt # Ingestion dependencies
@@ -138,6 +149,36 @@ Response:
 Interactive API documentation is available at:
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+
+## Frontend
+
+A minimal, clean chat interface is available in `frontend/`:
+
+### Quick Start
+
+```bash
+# Start backend first
+cd backend
+python main.py
+
+# In another terminal, start frontend
+cd frontend
+python serve.py
+
+# Opens browser at http://localhost:3000
+```
+
+### Features
+
+- ✅ Simple HTML + CSS + JavaScript (no frameworks)
+- ✅ Clean, modern chat interface
+- ✅ Connects to `/ask` endpoint
+- ✅ Shows answers with clickable sources
+- ✅ Typing indicators and loading states
+- ✅ Error handling
+- ✅ Fully responsive (desktop, tablet, mobile)
+
+See [frontend/README.md](frontend/README.md) for detailed documentation.
 
 ## Configuration Options
 
