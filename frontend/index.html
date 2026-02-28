@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuora Help Agent</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🤖 Zuora Help Agent</h1>
+            <p>Ask questions about Zuora products and documentation</p>
+        </header>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <!-- Welcome message -->
+            <div class="message bot-message">
+                <div class="message-content">
+                    <p>👋 Hello! I'm your Zuora documentation assistant.</p>
+                    <p>Ask me anything about Zuora Billing, CPQ, Payments, or Platform features.</p>
+                    <p class="example-questions">
+                        <strong>Example questions:</strong><br>
+                        • What is Zuora CPQ?<br>
+                        • How do I configure SSO?<br>
+                        • What payment methods does Zuora support?
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <form id="questionForm">
+                <input
+                    type="text"
+                    id="questionInput"
+                    placeholder="Ask a question about Zuora..."
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" id="sendButton">
+                    <span id="sendButtonText">Send</span>
+                    <span id="sendButtonLoader" class="loader hidden"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar" id="statusBar">
+            <span id="statusText">Ready</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
