@@ -17,16 +17,26 @@ A production-ready RAG (Retrieval-Augmented Generation) based AI assistant for Z
 ```
 zuora-help-agent/
 ├── backend/
-│   ├── main.py           # FastAPI application & endpoints
-│   ├── config.py         # Configuration & environment variables
-│   ├── rag.py            # RAG pipeline implementation
-│   ├── embeddings.py     # Embedding generation & vector store
-│   └── prompts.py        # Prompt templates & utilities
-├── data/                 # Data storage (vector DB, documents)
-├── scripts/              # Utility scripts (ingestion, etc.)
-├── requirements.txt      # Python dependencies
-├── .env.example         # Example environment variables
-└── README.md            # This file
+│   ├── main.py              # FastAPI application & endpoints
+│   ├── config.py            # Configuration & environment variables
+│   ├── rag.py               # RAG pipeline implementation
+│   ├── embeddings.py        # Embedding generation & vector store
+│   └── prompts.py           # Prompt templates & utilities
+├── data/
+│   ├── zuora_docs.json      # Scraped documentation
+│   └── vector_store/        # FAISS index + metadata
+├── scripts/
+│   ├── scrape_zuora_sitemap.py    # Sitemap-based scraper
+│   ├── scrape_zuora_docs.py       # Web crawler scraper
+│   ├── ingest_docs.py             # Chunking + embedding + FAISS
+│   ├── query_index.py             # Test vector store queries
+│   ├── requirements-scraper.txt   # Scraping dependencies
+│   ├── requirements-ingestion.txt # Ingestion dependencies
+│   ├── README_SCRAPING.md         # Scraping guide
+│   └── README_INGESTION.md        # Ingestion guide
+├── requirements.txt         # Core backend dependencies
+├── .env.example            # Example environment variables
+└── README.md               # This file
 ```
 
 ## Prerequisites
@@ -202,9 +212,9 @@ With coverage:
 pytest --cov=backend --cov-report=html
 ```
 
-## Data Collection
+## Data Collection & Ingestion
 
-### Scraping Zuora Documentation
+### Step 1: Scrape Zuora Documentation
 
 Two scraping tools are available in `scripts/`:
 
@@ -242,40 +252,117 @@ Both scrapers output to `../data/zuora_docs.json` with cleaned text and metadata
 
 See [scripts/README_SCRAPING.md](scripts/README_SCRAPING.md) for detailed documentation.
 
+### Step 2: Generate Embeddings & Build Vector Store
+
+After scraping, process the documentation into a searchable FAISS index:
+
+```bash
+# Install ingestion dependencies
+pip install -r requirements-ingestion.txt
+
+# Set API key (OpenAI or Voyage AI)
+export OPENAI_API_KEY="sk-..."
+
+# Run ingestion (chunks docs, generates embeddings, builds FAISS index)
+python ingest_docs.py --input ../data/zuora_docs.json
+```
+
+**Key Features:**
+- ✅ Chunks documents into 800-token sections with 100-token overlap
+- ✅ Generates embeddings using OpenAI or Voyage AI (Anthropic recommended)
+- ✅ Stores vectors in FAISS for fast similarity search
+- ✅ Preserves metadata for source attribution
+
+**Test the Index:**
+```bash
+python query_index.py --query "What is Zuora CPQ?"
+```
+
+See [scripts/README_INGESTION.md](scripts/README_INGESTION.md) for detailed documentation.
+
 ## Next Steps
 
-### 1. Collect Documentation
+### 1. Collect & Process Documentation ✅
 
-Use the scraping tools above to gather Zuora documentation.
+- [x] Scrape Zuora documentation (use `scrape_zuora_sitemap.py`)
+- [x] Chunk and embed documents (use `ingest_docs.py`)
+- [x] Build FAISS vector store
 
-### 2. Implement RAG Components
+### 2. Integrate RAG Pipeline
 
-- [ ] Complete `embeddings.py` - Vector store integration
-- [ ] Complete `rag.py` - Document retrieval and answer generation
-- [ ] Create document ingestion pipeline
-
-### 3. Process Documents
-
-Create script to ingest scraped documentation:
+Update `backend/rag.py` to use the FAISS index:
 
 ```python
-# scripts/ingest_docs.py
+import faiss
+import pickle
 from pathlib import Path
-from backend.embeddings import DocumentProcessor
-import json
+import numpy as np
 
-processor = DocumentProcessor()
+class DocumentRetriever:
+    def __init__(self, vector_store_path: str = "../data/vector_store"):
+        # Load FAISS index
+        index_path = Path(vector_store_path) / "faiss.index"
+        self.index = faiss.read_index(str(index_path))
 
-# Load scraped docs
-with open("../data/zuora_docs.json") as f:
-    data = json.load(f)
+        # Load chunk metadata
+        metadata_path = Path(vector_store_path) / "chunks_metadata.pkl"
+        with open(metadata_path, "rb") as f:
+            self.chunks = pickle.load(f)
 
-# Process each document
-for doc in data["documents"]:
-    await processor.process_document(
-        content=doc["content"],
-        metadata=doc["metadata"]
-    )
+    async def retrieve(
+        self,
+        query_embedding: np.ndarray,
+        top_k: int = 5
+    ) -> List[Dict]:
+        """Retrieve most similar chunks."""
+        distances, indices = self.index.search(query_embedding, top_k)
+
+        results = []
+        for idx, distance in zip(indices[0], distances[0]):
+            chunk = self.chunks[idx]
+            chunk["similarity_score"] = float(distance)
+            results.append(chunk)
+
+        return results
+```
+
+### 3. Complete Answer Generation
+
+Implement the LLM integration in `rag.py`:
+
+```python
+from anthropic import Anthropic
+
+class AnswerGenerator:
+    def __init__(self):
+        self.client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+    async def generate(
+        self,
+        query: str,
+        context_chunks: List[Dict],
+        conversation_history: List[Dict] = None
+    ) -> str:
+        """Generate answer using Claude with retrieved context."""
+        # Format context from chunks
+        context = "\n\n".join([
+            f"[Source: {c['metadata']['title']}]\n{c['content']}"
+            for c in context_chunks
+        ])
+
+        # Build prompt
+        system_prompt = get_system_prompt()
+        user_prompt = format_rag_prompt(query, context)
+
+        # Call Claude
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+
+        return response.content[0].text
 ```
 
 ### 4. Add Conversation Storage

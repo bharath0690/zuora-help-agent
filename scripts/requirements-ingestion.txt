@@ -1,0 +1,16 @@
+# Document Ingestion Dependencies
+
+# Core dependencies
+numpy==1.26.4
+faiss-cpu==1.8.0  # Use faiss-gpu for GPU support
+
+# Token counting
+tiktoken==0.6.0
+
+# Embedding providers (choose based on preference)
+openai==1.12.0  # For OpenAI embeddings
+# voyageai==0.2.0  # Uncomment for Voyage AI (Anthropic recommended)
+# sentence-transformers==2.3.1  # Uncomment for local embeddings
+
+# Utilities
+tqdm==4.66.1
