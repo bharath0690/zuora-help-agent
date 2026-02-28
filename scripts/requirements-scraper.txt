@@ -1,0 +1,9 @@
+# Web Scraping Dependencies
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.1.0
+tqdm==4.66.1
+
+# Optional: Advanced scraping
+# selenium==4.16.0  # For JavaScript-heavy pages
+# playwright==1.41.0  # Alternative to Selenium
