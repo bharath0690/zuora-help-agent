@@ -202,37 +202,89 @@ With coverage:
 pytest --cov=backend --cov-report=html
 ```
 
+## Data Collection
+
+### Scraping Zuora Documentation
+
+Two scraping tools are available in `scripts/`:
+
+**Option 1: Sitemap-based Scraper (Recommended)**
+
+Efficient scraping using Zuora's sitemap.xml:
+
+```bash
+cd scripts
+
+# Install scraping dependencies
+pip install -r requirements-scraper.txt
+
+# Scrape specific product (billing)
+python scrape_zuora_sitemap.py --product billing --max-pages 100
+
+# Scrape multiple products
+python scrape_zuora_sitemap.py --product billing payments platform --max-pages 300
+
+# Scrape all Zuora products
+python scrape_zuora_sitemap.py --all-products --max-pages 1000
+```
+
+Available products: `billing`, `payments`, `platform`, `cpq`, `revenue`, `ar`, `zephr`, `basics`, `entitlements`, `release-notes`
+
+**Option 2: Web Crawler**
+
+General-purpose crawler for docs.zuora.com:
+
+```bash
+python scrape_zuora_docs.py --max-pages 200 --delay 1.5
+```
+
+Both scrapers output to `../data/zuora_docs.json` with cleaned text and metadata.
+
+See [scripts/README_SCRAPING.md](scripts/README_SCRAPING.md) for detailed documentation.
+
 ## Next Steps
 
-### 1. Implement RAG Components
+### 1. Collect Documentation
+
+Use the scraping tools above to gather Zuora documentation.
+
+### 2. Implement RAG Components
 
 - [ ] Complete `embeddings.py` - Vector store integration
 - [ ] Complete `rag.py` - Document retrieval and answer generation
-- [ ] Implement document ingestion scripts
+- [ ] Create document ingestion pipeline
 
-### 2. Add Document Processing
+### 3. Process Documents
 
-Create script to ingest Zuora documentation:
+Create script to ingest scraped documentation:
 
 ```python
 # scripts/ingest_docs.py
 from pathlib import Path
 from backend.embeddings import DocumentProcessor
+import json
 
 processor = DocumentProcessor()
-docs_dir = Path("../data/zuora_docs")
 
-for doc_path in docs_dir.glob("**/*.pdf"):
-    await processor.process_document(doc_path)
+# Load scraped docs
+with open("../data/zuora_docs.json") as f:
+    data = json.load(f)
+
+# Process each document
+for doc in data["documents"]:
+    await processor.process_document(
+        content=doc["content"],
+        metadata=doc["metadata"]
+    )
 ```
 
-### 3. Add Conversation Storage
+### 4. Add Conversation Storage
 
 Implement conversation history tracking:
 - Use Redis for short-term cache
 - Use PostgreSQL for long-term storage
 
-### 4. Enhance Monitoring
+### 5. Enhance Monitoring
 
 Add:
 - Prometheus metrics
@@ -240,7 +292,7 @@ Add:
 - Performance tracking
 - Error alerting
 
-### 5. Deploy
+### 6. Deploy
 
 Options:
 - **Docker**: Create Dockerfile and docker-compose.yml
